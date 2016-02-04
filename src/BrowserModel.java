@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 
 /**
@@ -21,6 +22,8 @@ public class BrowserModel {
     private int myCurrentIndex;
     private List<URL> myHistory;
     private Map<String, URL> myFavorites;
+    private ResourceBundle myResources;
+    private String DEFAULT_RESOURCE_PACKAGE = "errorResources/";
 
 
     /**
@@ -32,28 +35,33 @@ public class BrowserModel {
         myCurrentIndex = -1;
         myHistory = new ArrayList<>();
         myFavorites = new HashMap<>();
+        myResources = ResourceBundle.getBundle(DEFAULT_RESOURCE_PACKAGE + "errorMessage");
     }
 
     /**
      * Returns the first page in next history, null if next history is empty.
      */
     public URL next () {
-        if (hasNext()) {
+        try {
             myCurrentIndex++;
             return myHistory.get(myCurrentIndex);
         }
-        return null;
+        catch(BrowserException e) {
+        	throw new BrowserException(String.format(myResources.getString("ForwardError")));
+        }
     }
 
     /**
      * Returns the first page in back history, null if back history is empty.
      */
-    public URL back () {
-        if (hasPrevious()) {
+    public URL back() {
+        try {
             myCurrentIndex--;
             return myHistory.get(myCurrentIndex);
         }
-        return null;
+        catch (BrowserException e) {
+        	throw new BrowserException(String.format(myResources.getString("BackError")));
+        }
     }
 
     /**
@@ -66,17 +74,17 @@ public class BrowserModel {
             tmp.openStream();
             // if successful, remember this URL
             myCurrentURL = tmp;
-            if (myCurrentURL != null) {
+            //if (myCurrentURL != null) {
                 if (hasNext()) {
                     myHistory = myHistory.subList(0, myCurrentIndex + 1);
                 }
                 myHistory.add(myCurrentURL);
                 myCurrentIndex++;
-            }
+            //}
             return myCurrentURL;
         }
-        catch (Exception e) {
-            return null;
+        catch (Exception e) { 
+        	throw new BrowserException(String.format(myResources.getString("BrowserError"), url));
         }
     }
 
@@ -106,8 +114,11 @@ public class BrowserModel {
      */
     public void setHome () {
         // just in case, might be called before a page is visited
-        if (myCurrentURL != null) {
+        try {
             myHome = myCurrentURL;
+        }
+        catch (BrowserException e) {
+        	throw new BrowserException(String.format(myResources.getString("HomeError")));
         }
     }
 
@@ -116,19 +127,26 @@ public class BrowserModel {
      */
     public void addFavorite (String name) {
         // just in case, might be called before a page is visited
-        if (name != null && !name.equals("") && myCurrentURL != null) {
-            myFavorites.put(name, myCurrentURL);
+       try {
+    	   if(!name.equals("") && myCurrentURL != null) {
+    		   myFavorites.put(name, myCurrentURL);
+    	   }
         }
+       catch (BrowserException e) {
+    	   throw new BrowserException(String.format(myResources.getString("NoNameError")));
+       }
     }
 
     /**
      * Returns URL from favorites associated with given name, null if none set.
      */
     public URL getFavorite (String name) {
-        if (name != null && !name.equals("") && myFavorites.containsKey(name)) {
+        try {
             return myFavorites.get(name);
         }
-        return null;
+        catch(BrowserException e) {
+        	throw new BrowserException(String.format(myResources.getString("NoFavoriteError")));
+        }
     }
 
     // deal with a potentially incomplete URL
